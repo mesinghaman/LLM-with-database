@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://www.postgresql.org/media/img/about/press/elephant.png" type="image/png">
+  <title>PostgreSQL MCP Chat</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: slideDown 0.8s ease-out;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(45deg, #336791, #1a4f6e);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(51, 103, 145, 0.3);
+    }
+
+    .logo-icon::before {
+      content: "🐘";
+      font-size: 32px;
+    }
+
+    h1 {
+      color: white;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 75vh;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      animation: slideUp 0.8s ease-out;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px;
+      background: linear-gradient(to bottom, rgba(248, 250, 252, 0.5), rgba(255, 255, 255, 0.5));
+      position: relative;
+    }
+
+    .chat-messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 3px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: rgba(102, 126, 234, 0.3);
+      border-radius: 3px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+      background: rgba(102, 126, 234, 0.5);
+    }
+
+    .message {
+      margin-bottom: 20px;
+      padding: 16px 24px;
+      border-radius: 20px;
+      max-width: 85%;
+      word-wrap: break-word;
+      animation: messageSlide 0.4s ease-out;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-message {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      align-self: flex-end;
+      margin-left: auto;
+      border-bottom-right-radius: 6px;
+    }
+
+    .user-message::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -8px;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 0 0 14px 8px;
+      border-color: transparent transparent #764ba2 transparent;
+    }
+
+    .assistant-message {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      color: #334155;
+      align-self: flex-start;
+      border-bottom-left-radius: 6px;
+      border: 1px solid rgba(203, 213, 225, 0.5);
+    }
+
+    .assistant-message::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: -8px;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 0 8px 14px 0;
+      border-color: transparent #e2e8f0 transparent transparent;
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 30px;
+      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+      border-top: 1px solid rgba(203, 213, 225, 0.3);
+      gap: 15px;
+      align-items: flex-end;
+    }
+
+    .input-container {
+      flex: 1;
+      position: relative;
+    }
+
+    .chat-input input {
+      width: 100%;
+      padding: 16px 24px;
+      border: 2px solid rgba(203, 213, 225, 0.3);
+      border-radius: 25px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-input input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .send-button {
+      padding: 16px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      min-width: 100px;
+    }
+
+    .send-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .send-button:active {
+      transform: translateY(0);
+    }
+
+    .sql-query {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 12px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 15px 0;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      position: relative;
+    }
+
+    .sql-query::before {
+      content: 'SQL';
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .query-result {
+      margin-top: 15px;
+      overflow-x: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: none;
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid rgba(203, 213, 225, 0.3);
+    }
+
+    th {
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      font-weight: 600;
+      color: #475569;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tr:hover {
+      background-color: rgba(102, 126, 234, 0.05);
+    }
+
+    .loading-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .loading-dots::after {
+      content: '';
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: loadingDots 1.4s ease-in-out infinite;
+    }
+
+    .loading-dots::before {
+      content: '';
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: loadingDots 1.4s ease-in-out -0.16s infinite;
+      margin-right: 4px;
+    }
+ 
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes messageSlide {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes loadingDots {
+      0%, 80%, 100% {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      40% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+ 
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .chat-container {
+        height: 80vh;
+        border-radius: 20px;
+      }
+      
+      .message {
+        max-width: 95%;
+      }
+      
+      .chat-input {
+        padding: 20px;
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .send-button {
+        width: 100%;
+      }
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      .assistant-message {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        color: #f9fafb;
+        border-color: rgba(107, 114, 128, 0.5);
+      }
+      
+      .assistant-message::after {
+        border-color: transparent #4b5563 transparent transparent;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon"></div>
+        <div>
+          <h1>PostgreSQL MCP Chat</h1>
+          <p class="subtitle">Ask questions about your PostgreSQL database in natural language</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <div class="message assistant-message">
+          👋 Hello! I'm your PostgreSQL assistant. Ask me anything about your database, and I'll help you explore it with intelligent queries and insights.
+        </div>
+      </div>
+      <div class="chat-input">
+        <div class="input-container">
+          <input type="text" id="user-input" placeholder="Ask a question about your database..." />
+        </div>
+        <button class="send-button" id="send-button">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const chatMessages = document.getElementById('chat-messages');
+      const userInput = document.getElementById('user-input');
+      const sendButton = document.getElementById('send-button');
+ 
+      function addMessage(content, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+        messageDiv.innerHTML = content;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+ 
+      function createLoadingMessage() {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'message assistant-message';
+        loadingDiv.innerHTML = '<div class="loading-dots">Thinking</div>';
+        return loadingDiv;
+      }
+ 
+      async function sendMessage(message) {
+        try {
+          addMessage(message, true);
+           
+          const loadingMessage = createLoadingMessage();
+          chatMessages.appendChild(loadingMessage);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          
+          const response = await fetch('/api/query', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: message }),
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to get response');
+          }
+          
+          const data = await response.json();
+           
+          loadingMessage.remove();
+           
+          let resultHtml = '';
+          
+          if (data.response && Array.isArray(data.response)) { 
+            const toolCallMessage = data.response.find(msg => 
+              msg.tool_calls && msg.tool_calls.length > 0 && msg.tool_calls[0].name === 'query'
+            );
+            
+            if (toolCallMessage && toolCallMessage.tool_calls && toolCallMessage.tool_calls[0]) {
+              const sql = toolCallMessage.tool_calls[0].args.sql;
+              resultHtml += `<div><strong>💾 SQL Query:</strong><div class="sql-query">${escapeHtml(sql)}</div></div>`;
+            }
+             
+            const toolMessage = data.response.find(msg => msg.name === 'query');
+            if (toolMessage && toolMessage.content) {
+              let result;
+              try {
+                result = JSON.parse(toolMessage.content);
+                resultHtml += `<div><strong>📊 Result:</strong><div class="query-result">${formatResult(result)}</div></div>`;
+              } catch (e) {
+                resultHtml += `<div><strong>📊 Result:</strong><div class="query-result">${escapeHtml(toolMessage.content)}</div></div>`;
+              }
+            }
+          }
+           
+          if (resultHtml === '' && data.answer) {
+            resultHtml = data.answer;
+          }
+          
+          addMessage(resultHtml, false);
+        } catch (error) {
+          console.error('Error:', error);
+          loadingMessage?.remove();
+          addMessage('❌ Sorry, there was an error processing your request. Please try again.', false);
+        }
+      }
+ 
+      function escapeHtml(unsafe) {
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+ 
+      function formatResult(result) {
+        if (!result || result.length === 0) {
+          return '<div style="padding: 20px; text-align: center; color: #64748b;">📭 No results found</div>';
+        }
+        
+        if (typeof result === 'string') {
+          return escapeHtml(result);
+        }
+         
+        if (Array.isArray(result) && typeof result[0] === 'object') {
+          const columns = Object.keys(result[0]);
+          
+          let tableHtml = '<table><thead><tr>';
+          columns.forEach(column => {
+            tableHtml += `<th>${escapeHtml(column)}</th>`;
+          });
+          tableHtml += '</tr></thead><tbody>';
+          
+          result.forEach(row => {
+            tableHtml += '<tr>';
+            columns.forEach(column => {
+              const value = row[column];
+              const displayValue = value !== null ? escapeHtml(String(value)) : '<em style="color: #94a3b8;">NULL</em>';
+              tableHtml += `<td>${displayValue}</td>`;
+            });
+            tableHtml += '</tr>';
+          });
+          
+          tableHtml += '</tbody></table>';
+          return tableHtml;
+        }
+         
+        return `<pre style="background: #f8fafc; padding: 15px; border-radius: 8px; overflow-x: auto;">${escapeHtml(JSON.stringify(result, null, 2))}</pre>`;
+      }
+ 
+      sendButton.addEventListener('click', () => {
+        const message = userInput.value.trim();
+        if (message) {
+          sendMessage(message);
+          userInput.value = '';
+        }
+      });
+
+      userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          const message = userInput.value.trim();
+          if (message) {
+            sendMessage(message);
+            userInput.value = '';
+          }
+        }
+      });
+ 
+      userInput.focus();
+    });
+  </script>
+</body>
+</html>
