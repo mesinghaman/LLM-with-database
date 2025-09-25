@@ -28,10 +28,7 @@ An intelligent assistant to explore and query PostgreSQL databases using natural
 
 ---
 
-### Installation
-
-npm install
----
+ 
 ### Initialize Database
 
 Run the database initialization script to clone the required schema repository, apply schema, and load initial data:
@@ -87,7 +84,4 @@ This project is licensed under the MIT License.
 ---
 
 Feel free to open issues or pull requests for improvements and bug fixes!
-
-### Installation
-
-npm install
+ 
